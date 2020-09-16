@@ -1,8 +1,5 @@
 #pragma once
 
-#define _DEFAULT_SOURCE
-#include <termios.h>
-
 #include <unistd.h>
 #include <stdint.h>
 #include <string.h>

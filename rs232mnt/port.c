@@ -9,6 +9,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+// Serial port initialization
+
 int GetSerialSpeed(int value)
 {
   switch (value)
@@ -98,6 +100,8 @@ int OpenSerialPort(const char* device, int speed, int flags)
 
   return handle;
 }
+
+// Win32 API
 
 void Sleep(int interval)
 {
