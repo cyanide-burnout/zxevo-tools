@@ -1,5 +1,3 @@
-LIBRARIES =
-
 OBJECTS = \
   port.o \
   fifo.o \
@@ -10,8 +8,6 @@ FLAGS := \
 
 LIBS := \
   $(foreach library, $(LIBRARIES), -l$(library))
-
-CC = gcc
 
 CFLAGS += $(FLAGS) -std=gnu99
 CXXFLAGS += $(FLAGS) -fno-implicit-templates -D__STDC_CONSTANT_MACROS

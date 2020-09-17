@@ -11,7 +11,7 @@
 
 // Serial port initialization
 
-int GetSerialSpeed(int value)
+inline int GetSerialSpeed(int value)
 {
   switch (value)
   {
@@ -73,9 +73,10 @@ int OpenSerialPort(const char* device, int speed, int flags)
   speed  = GetSerialSpeed(speed);
   flags |= CS8 * (flags == 0);
 
-#ifdef __linux__
   options.c_cflag  = flags | CREAD | CLOCAL;
   options.c_lflag &= ~ (ECHO | ICANON | IEXTEN | ISIG);
+
+#ifdef __linux__
   options.c_iflag &= ~ (IGNBRK | BRKINT | ICRNL | INLCR | PARMRK | INPCK | ISTRIP | IXON | IXON | IXOFF | IXANY);
   options.c_oflag &= ~ (OCRNL | ONLCR | ONLRET | ONOCR | OFILL | NLDLY | CRDLY | TABDLY | BSDLY | VTDLY | FFDLY | OLCUC | OPOST);
 
@@ -84,8 +85,6 @@ int OpenSerialPort(const char* device, int speed, int flags)
 #endif
 
 #if defined(__MACH__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__FreeBSD__)
-  options.c_cflag  = flags | CREAD | CLOCAL;
-  options.c_lflag &= ~ (ECHO | ICANON | IEXTEN | ISIG);
   options.c_iflag &= ~ (IGNBRK | BRKINT | ICRNL | INLCR | PARMRK | INPCK | ISTRIP | IXON | IXON | IXOFF | IXANY);
   options.c_oflag &= ~ (OCRNL | ONLCR | ONLRET | ONOCR | OFILL | NLDLY | CRDLY | TABDLY | BSDLY | VTDLY | FFDLY | OPOST);
 #endif
