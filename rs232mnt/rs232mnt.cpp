@@ -114,7 +114,6 @@ int _tmain(int argc, _TCHAR* argv[])
   SECT sect;
 
   DWORD dwRead, dwWrite;
-  FILE *f;
   STATE state = ST_IDLE;
 
   printf("\n");
@@ -129,16 +128,10 @@ int _tmain(int argc, _TCHAR* argv[])
   {
     if (trd[i])
     {
-      if (!(f = fopen(trd[i], "rb")))
+      if (!LoadDiskImage(trd[i], img[i]))
       {
         printf("Can't open: %s\n", trd[i]);
         return 2;
-      }
-      else
-      {
-        printf("%s opened successfully\n", trd[i]);
-        fread(img[i], 1, TRD_SZ, f);
-        fclose(f);
       }
     }
   }

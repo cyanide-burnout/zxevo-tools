@@ -1,0 +1,3 @@
+[submodule "trx2x"]
+	path = trx2x
+	url = https://github.com/atsidaev/trx2x.git

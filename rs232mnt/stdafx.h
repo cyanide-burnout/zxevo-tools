@@ -25,3 +25,5 @@ extern "C"
   void ReadFile(int handle, void* buffer, uint32_t size, uint32_t* count, void* unused);
   void WriteFile(int handle, void* buffer, uint32_t size, uint32_t* count, void* unused);
 }
+
+bool LoadDiskImage(const char* path, uint8_t* buffer);
