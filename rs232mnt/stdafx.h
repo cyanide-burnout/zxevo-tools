@@ -27,3 +27,4 @@ extern "C"
 }
 
 bool LoadDiskImage(const char* path, uint8_t* buffer);
+bool SaveDiskImage(const char* path, uint8_t* buffer);
