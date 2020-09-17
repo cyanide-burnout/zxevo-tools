@@ -102,12 +102,12 @@ bool SaveDiskImage(const char* path, uint8_t* buffer)
     return false;
   }
 
-  if (!CheckFileExtension(extension, ".TRD")) image.writeTRD(handle);
-  if (!CheckFileExtension(extension, ".SCL")) image.writeSCL(handle);
-  if (!CheckFileExtension(extension, ".FDI")) image.writeFDI(handle);
-  if (!CheckFileExtension(extension, ".UDI")) image.writeUDI(handle);
-  if (!CheckFileExtension(extension, ".TD0")) image.writeTD0(handle);
-  if (!CheckFileExtension(extension, ".FDD")) image.writeFDD(handle);
+  if (CheckFileExtension(extension, ".TRD")) image.writeTRD(handle);
+  if (CheckFileExtension(extension, ".SCL")) image.writeSCL(handle);
+  if (CheckFileExtension(extension, ".FDI")) image.writeFDI(handle);
+  if (CheckFileExtension(extension, ".UDI")) image.writeUDI(handle);
+  if (CheckFileExtension(extension, ".TD0")) image.writeTD0(handle);
+  if (CheckFileExtension(extension, ".FDD")) image.writeFDD(handle);
 
   fstat(handle, &status);
   close(handle);
