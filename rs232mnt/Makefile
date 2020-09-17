@@ -30,6 +30,6 @@ build: $(PREREQUISITES) $(OBJECTS)
 
 clean:
 	rm -f $(PREREQUISITES) $(OBJECTS) rs232mnt
-	rm *.d
+	rm -f $(foreach file, $(OBJECTS), $(subst .o,.d,$(file)))
 
 .PHONY: all build clean install
