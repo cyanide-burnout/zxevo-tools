@@ -85,6 +85,8 @@ bool SetDiskImage(int number, const char* path, uint8_t** buffer, uint32_t size)
   {
     printf("Formating image ..\n");
     image.formatTRDOS(80, 2);
+    image.DiskPresent = true;
+    image.ReadOnly    = false;
     image.writeTRD(handle);
     fstat(handle, &status);
   }
