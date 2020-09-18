@@ -7,6 +7,8 @@
 #include <fcntl.h>
 #include <stdio.h>
 
+#include <sys/mman.h>
+
 #include "types.h"
 #include "fifo.h"
 
@@ -21,10 +23,12 @@ extern "C"
 {
   int OpenSerialPort(const char* device, int speed, int flags);
 
+  void SetInterruptionMask();
+  int CheckInterruption();
+
   void Sleep(int interval);
   void ReadFile(int handle, void* buffer, uint32_t size, uint32_t* count, void* unused);
   void WriteFile(int handle, void* buffer, uint32_t size, uint32_t* count, void* unused);
 }
 
-bool LoadDiskImage(const char* path, uint8_t* buffer);
-bool SaveDiskImage(const char* path, uint8_t* buffer);
+bool SetDiskImage(int number, const char* path, uint8_t** buffer, uint32_t size);

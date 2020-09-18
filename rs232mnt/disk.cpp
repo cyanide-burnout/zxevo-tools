@@ -1,116 +1,112 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <limits.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
 #include <sys/types.h>
+
+#include <stdlib.h>
+#include <stdio.h>
 
 #include "DiskImage.h"
 
-inline bool CheckFileExtension(const char* value1, const char* value2)
+inline const char* GetTemporaryFolder()
 {
-  // Magic! :)
-  return !((*(uint32_t*)value1 ^ *(uint32_t*)value2) & 0x1f1f1f1f);
-}
-
-bool LoadDiskImage(const char* path, uint8_t* buffer)
-{
-  TDiskImage image;
-  VGFIND_SECTOR data;
-
-  int side;
-  int track;
-  int sector;
-
-  image.AddBOOT = false;
-  image.Open(const_cast<char*>(path), true);
-
-  if (image.DiskPresent)
-  {
-    for (track = 0; track <= image.MaxTrack; track ++)
-    {
-      for (side = 0; side <= image.MaxSide; side ++)
-      {
-        for (sector = 1; sector <= 16; sector ++)
-        {
-          if (image.FindSector(track, side, sector, &data))
-          {
-            if (!data.CRCOK ||
-                !data.vgfa.CRCOK ||
-                (data.SectorLength != 256))
-            {
-              // Unsupported data format or CRC error
-              return false;
-            }
-
-            memcpy(buffer, data.SectorPointer, data.SectorLength);
-            buffer += data.SectorLength;
-
-            continue;
-          }
-
-          memset(buffer, '*', 256);
-          buffer += 256;
-        }
-      }
-    }
-  }
-
-  return image.DiskPresent;
-}
-
-bool SaveDiskImage(const char* path, uint8_t* buffer)
-{
-  int handle;
-  const char* extension;
-
-  TDiskImage image;
-  VGFIND_SECTOR data;
-
-  int side;
-  int track;
-  int sector;
-
+  const char* value;
   struct stat status;
 
-  image.formatTRDOS(80, 2);
+  value = getenv("TMP");
 
-  for (track = 0; track <= image.MaxTrack; track ++)
+  if ((value == NULL) &&
+      (stat("/tmp", &status) == 0) &&
+      (S_ISDIR(status.st_mode)))
   {
-    for (side = 0; side <= image.MaxSide; side ++)
-    {
-      for (sector = 1; sector <= 16; sector ++)
-      {
-        image.FindSector(track, side, sector, &data);
-        memcpy(data.SectorPointer, buffer, data.SectorLength);
-        buffer += data.SectorLength;
-        image.ApplySectorCRC(data);
-      }
-    }
+    // Use /tmp as a temporary folder
+    value = "/tmp";
   }
 
-  handle    = open(path, O_CREAT | O_RDWR | O_TRUNC, 0666);
-  extension = strrchr(path, '.');
-
-  if ((handle < 0) ||
-      (extension == NULL) ||
-      (strlen(extension) != 4))
+  if (value == NULL)
   {
-    // Cannot open a file for write
+    // Use current folder when empty
+    value = ".";
+  }
+
+  return value;
+}
+
+bool SetDiskImage(int number, const char* path, uint8_t** buffer, uint32_t size)
+{
+  const char* file;
+  const char* extension;
+  const char* temporary;
+
+  int handle;
+  struct stat status;
+  char name[PATH_MAX];
+
+  TDiskImage image;
+
+  file = path;
+
+  if ((path == NULL) ||
+      (extension = strrchr(path, '.')) &&
+      (strcmp(extension, ".trd") != 0))
+  {
+    file      = name;
+    temporary = GetTemporaryFolder();
+    snprintf(name, PATH_MAX, "%s/rs232mnt-%d.trd", temporary, number);
+  }
+
+  printf("Using %s for drive %d\n", file, number);
+  handle = open(file, O_CREAT | O_RDWR, 0666);
+
+  if (handle < 0)
+  {
+    printf("Error openning file (%i)\n", errno);
     close(handle);
     return false;
   }
 
-  if (CheckFileExtension(extension, ".TRD")) image.writeTRD(handle);
-  if (CheckFileExtension(extension, ".SCL")) image.writeSCL(handle);
-  if (CheckFileExtension(extension, ".FDI")) image.writeFDI(handle);
-  if (CheckFileExtension(extension, ".UDI")) image.writeUDI(handle);
-  if (CheckFileExtension(extension, ".TD0")) image.writeTD0(handle);
-  if (CheckFileExtension(extension, ".FDD")) image.writeFDD(handle);
+  if ((path != NULL) &&
+      (path != file))
+  {
+    printf("Converting image %s ..\n", path);
+    ftruncate(handle, 0);
+    image.Open(const_cast<char*>(path), true);
+    image.writeTRD(handle);
+  }
 
-  fstat(handle, &status);
+  if ((fstat(handle, &status) == 0) &&
+      (status.st_size == 0))
+  {
+    printf("Formating image ..\n");
+    image.formatTRDOS(80, 2);
+    image.writeTRD(handle);
+    fstat(handle, &status);
+  }
+
+  /*
+  if ((fstat(handle, &status) == 0) &&
+      (status.st_size != size))
+  {
+    ftruncate(handle, size);
+    status.st_size = size;
+  }
+  */
+
+  *buffer = (uint8_t*)mmap(NULL, status.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, handle, 0);
+
+  if (*buffer == (uint8_t*)MAP_FAILED)
+  {
+    printf("Error creating memory map for %s\n", file);
+    close(handle);
+    return false;
+  }
+
   close(handle);
-
-  return status.st_size;
+  return true;
 }

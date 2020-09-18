@@ -6,6 +6,7 @@
 
 #include <termios.h>
 #include <stdint.h>
+#include <signal.h>
 #include <unistd.h>
 #include <fcntl.h>
 
@@ -98,6 +99,26 @@ int OpenSerialPort(const char* device, int speed, int flags)
   }
 
   return handle;
+}
+
+// SIGINT handling
+
+void SetInterruptionMask()
+{
+  sigset_t set;
+
+  sigemptyset(&set);
+  sigaddset(&set, SIGINT);
+  sigprocmask(SIG_BLOCK, &set, NULL);
+}
+
+int CheckInterruption()
+{
+  sigset_t set;
+
+  return
+    ((sigpending(&set) < 0) ||
+     (sigismember(&set, SIGINT) == 0));
 }
 
 // Win32 API

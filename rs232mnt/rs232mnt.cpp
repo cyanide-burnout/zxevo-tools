@@ -39,7 +39,7 @@ typedef struct
 } SECT;
 #pragma pack (pop)
 
-U8 img[4][TRD_SZ];
+U8* img[4]; // U8 img[4][TRD_SZ];
 int baud = BAUD;
 bool _log = false;
 bool slow = false;
@@ -53,7 +53,7 @@ void print_help()
 {
   printf("RS-232 VDOS Mounter,  (c) 2013 TS-Labs inc.\n\n");
   printf("Command line parameters (any is optional):\n");
-  printf("-a|b|c|d <filename.trd>\n\tTRD image to be mounted on drive A-D (up to 4 images)\n");
+  printf("-a|b|c|d <filename>\n\tTRD image to be mounted on drive A-D (up to 4 images)\n");
   printf("-com\n\tSerial port name (default = %s)\n", cport);
   printf("-baud\n\tUART Baudrate (default = %d)\n", BAUD);
   printf("-slowpoke\n\tInsert delays into transmit\n");
@@ -96,7 +96,7 @@ int parse_args(int argc, _TCHAR* argv[])
   if (i = parse_arg(argc, argv, "-d", 1))
     { trd[3] = argv[i]; drvs++; }
 
-  return drvs;
+  return argc > 1;  // drvs
 }
 
 U8 update_xor(U8 _xor, U8 *ptr, int num)
@@ -126,13 +126,10 @@ int _tmain(int argc, _TCHAR* argv[])
 
   for (int i=0; i<4; i++)
   {
-    if (trd[i])
+    if (!SetDiskImage(i, trd[i], img + i, TRD_SZ))
     {
-      if (!LoadDiskImage(trd[i], img[i]))
-      {
-        printf("Can't open: %s\n", trd[i]);
-        return 2;
-      }
+      // printf("Can't open image %d\n", i);
+      return 2;
     }
   }
 
@@ -147,9 +144,10 @@ int _tmain(int argc, _TCHAR* argv[])
     printf("%s opened successfully\n\n", cport);
 
   fifo_init(&fifo_in, fifo_in_buf, sizeof(fifo_in_buf));
+  SetInterruptionMask();
 
   U8 *disk_ptr;
-  while (1)
+  while (CheckInterruption())
   {
     ReadFile(hPort, uart_in_buf, 1, &dwRead, NULL);
     fifo_put(&fifo_in, uart_in_buf, dwRead);
@@ -229,6 +227,7 @@ int _tmain(int argc, _TCHAR* argv[])
           else
           {
             memcpy(disk_ptr, sect.data, sizeof(sect.data));
+            msync(disk_ptr, sizeof(sect.data), MS_ASYNC);
             state = ST_IDLE;
           }
         break;
