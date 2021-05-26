@@ -51,7 +51,8 @@ U8 uart_in_buf[512];
 
 void print_help()
 {
-  printf("RS-232 VDOS Mounter,  (c) 2013 TS-Labs inc.\n\n");
+  printf("RS-232 VDOS Mounter,  (c) 2013-2021 TS-Labs inc.\n\n");
+  
   printf("Command line parameters (any is optional):\n");
   printf("-a|b|c|d <filename>\n\tTRD image to be mounted on drive A-D (up to 4 images)\n");
   printf("-com\n\tSerial port name (default = %s)\n", cport);
@@ -141,7 +142,7 @@ int _tmain(int argc, _TCHAR* argv[])
     return 3;
   }
   else
-    printf("%s opened successfully\n\n", cport);
+    printf("%s opened successfully (%d baud)\n\n", cport, baud);
 
   fifo_init(&fifo_in, fifo_in_buf, sizeof(fifo_in_buf));
   SetInterruptionMask();
@@ -149,7 +150,7 @@ int _tmain(int argc, _TCHAR* argv[])
   U8 *disk_ptr;
   while (CheckInterruption())
   {
-    ReadFile(hPort, uart_in_buf, 1, &dwRead, NULL);
+    ReadFile(hPort, uart_in_buf, sizeof(fifo_in_buf), &dwRead, NULL);
     fifo_put(&fifo_in, uart_in_buf, dwRead);
 
     while (fifo_used(fifo_in))
@@ -197,14 +198,14 @@ int _tmain(int argc, _TCHAR* argv[])
                 {
                   U8 *ptr = (U8*)&sect;
                   int cnt = sizeof(sect);
-                  
+
                   while (cnt)
                   {
-                    int sz = min(64, cnt);
+                    int sz = slow ? min(16, cnt) : cnt;
                     WriteFile(hPort, ptr, sz, &dwWrite, NULL);
-                    if (slow) Sleep(1);
-                    ptr += sz;
-                    cnt -= sz;
+                    ptr += dwWrite;
+                    cnt -= dwWrite;
+                    if (slow) Sleep(3);
                   }
                 }
                 state = ST_IDLE;
